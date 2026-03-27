@@ -36884,7 +36884,6 @@ MonoBehaviour:
   minRange: 5
   enableFlicker: 1
   flickerThreshold: 0.2
-  energyFill: {fileID: 0}
 --- !u!114 &1343088106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36961,9 +36960,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxLives: 3
   currentLives: 0
-  life1: {fileID: 0}
-  life2: {fileID: 0}
-  life3: {fileID: 0}
 --- !u!65 &1343088109
 BoxCollider:
   m_ObjectHideFlags: 0

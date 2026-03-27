@@ -22,6 +22,11 @@ public class Rikayon : MonoBehaviour
     public float dangerDistance = 12f;
     public float flickerSpeed = 8f;
 
+    [Header("HORDA (TELETRANSPORTE)")]
+    public float maxDistanceToTeleport = 50f;
+    public float minRadius = 15f;
+    public float maxRadius = 25f;
+
     private bool isChasing = false;
     private bool isAttacking = false;
 
@@ -32,7 +37,6 @@ public class Rikayon : MonoBehaviour
         StartCoroutine(StartChase());
     }
 
-    //  CLAVE: se ejecuta cada vez que el bicho se activa
     void OnEnable()
     {
         if (dangerFlash == null)
@@ -45,8 +49,7 @@ public class Rikayon : MonoBehaviour
             if (dangerCanvas == null)
                 dangerCanvas = dangerFlash.AddComponent<CanvasGroup>();
 
-            //  RESET TOTAL (evita pantalla roja al aparecer)
-            dangerCanvas.alpha = 0f;
+            dangerCanvas.alpha = 0f; // 🔥 inicia limpio
         }
     }
 
@@ -54,24 +57,6 @@ public class Rikayon : MonoBehaviour
     {
         yield return new WaitForSeconds(delayBeforeChase);
 
-    [Header("Ataque")]
-    public float attackRecoveryTime = 2f; 
-    public float attackRange = 3.5f;      
-
-    [Header("Teletransporte (Jump Scare)")]
-    public float maxDistanceToTeleport = 50f; 
-    public float spawnDistanceFront = 25f;    
-
-    // --- NUEVO: SISTEMA DE HORDA ---
-    [Header("Formación de la Horda")]
-    public float lateralOffset = 0f; 
-    // -------------------------------
-
-    private bool isChasing = false;
-    private bool isAttacking = false;
-
-    void Start()
-    {
         isChasing = true;
         animator.SetBool("isWalking", true);
     }
@@ -82,21 +67,24 @@ public class Rikayon : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
+        // 🔥 Efecto pantalla roja
         UpdateDangerEffect(distanceToPlayer);
-        // --- Si bicho se queda muy atras llama la horda ---
+
+        // 🔥 Teletransporte de horda
         if (distanceToPlayer >= maxDistanceToTeleport)
         {
             TriggerHordeTeleport();
-            return; 
+            return;
         }
 
+        // 🔥 Ataque
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer(player.gameObject);
             return;
-            return; 
         }
 
+        // 🔥 Persecución
         ChasePlayer();
     }
 
@@ -104,12 +92,10 @@ public class Rikayon : MonoBehaviour
     {
         if (dangerCanvas == null) return;
 
-        //  Normalizar distancia
         float normalized = Mathf.Clamp01(1 - (distance / dangerDistance));
-
         float alpha = normalized;
 
-        //  Parpadeo cuando está muy cerca
+        // Parpadeo cerca
         if (distance < dangerDistance * 0.5f)
         {
             float flicker = Mathf.Sin(Time.time * flickerSpeed) * 0.5f + 0.5f;
@@ -128,33 +114,39 @@ public class Rikayon : MonoBehaviour
         transform.position += direction * speed * Time.deltaTime;
     }
 
-    // ---HORDA ---
+    // 🔥 ACTIVAR TELETRANSPORTE DE TODA LA HORDA
     void TriggerHordeTeleport()
     {
-        // Busca a todos los bichos en el mapa
-        Rikayon[] todaLaHorda = FindObjectsOfType<Rikayon>();
+        Rikayon[] horda = FindObjectsOfType<Rikayon>();
 
-        // teletransporta cada bicho al mismo tiempo
-        foreach (Rikayon bicho in todaLaHorda)
+        for (int i = 0; i < horda.Length; i++)
         {
-            bicho.ExecuteTeleport();
+            horda[i].ExecuteTeleport(i, horda.Length);
         }
 
-        Debug.Log("¡Un bicho se quedó atrás y teletransportó a toda la horda!");
+        Debug.Log("¡La horda rodea al jugador!");
     }
 
-    // se ejecuta en cada bicho individualmente para saber donde ubicarse
-    public void ExecuteTeleport()
+    // 🔥 TELETRANSPORTE EN FORMACIÓN CIRCULAR
+    public void ExecuteTeleport(int index, int total)
     {
-        // lateralOffset para ubicar a la izquierda, centro o derecha del taxi
-        Vector3 newPosition = player.position + (player.forward * spawnDistanceFront) + (player.right * lateralOffset);
-        
+        float angle = (360f / total) * index;
+
+        Vector3 direction = new Vector3(
+            Mathf.Sin(angle * Mathf.Deg2Rad),
+            0,
+            Mathf.Cos(angle * Mathf.Deg2Rad)
+        );
+
+        float radius = Random.Range(minRadius, maxRadius);
+
+        Vector3 newPosition = player.position + direction * radius;
         newPosition.y = transform.position.y;
+
         transform.position = newPosition;
 
         transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
     }
-    // -------------------------
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -179,9 +171,6 @@ public class Rikayon : MonoBehaviour
 
         Debug.Log("¡Jugador atrapado!");
 
-            taxiHealth.LoseLife(); 
-        }
-
         StartCoroutine(RecoverFromAttack());
     }
 
@@ -191,7 +180,5 @@ public class Rikayon : MonoBehaviour
 
         isAttacking = false;
         animator.SetBool("isWalking", true);
-        isAttacking = false;
-        animator.SetBool("isWalking", true); 
     }
 }
