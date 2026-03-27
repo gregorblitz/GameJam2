@@ -1,56 +1,75 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CarLightSystem : MonoBehaviour
 {
     [Header("REFERENCIAS DE LUCES")]
-    public Light leftLight;   // Luz del lado izquierdo del carro
-    public Light rightLight;  // Luz del lado derecho del carro
+    public Light leftLight;   // Luz izquierda
+    public Light rightLight;  // Luz derecha
 
     [Header("ENERGÍA")]
-    public float maxEnergy = 100f;  // Energía máxima de las luces
-    public float currentEnergy;     // Energía actual
+    public float maxEnergy = 100f;
+    public float currentEnergy;
 
     [Header("CONSUMO")]
-    public float drainRate = 5f;    // Energía que se consume por segundo
+    public float drainRate = 5f;
 
     [Header("CONFIGURACIÓN DE LUZ")]
-    public float maxIntensity = 2f; // Intensidad máxima de las luces
-    public float minIntensity = 0f; // Intensidad mínima (cuando se apaga)
-    public float maxRange = 25f;    // Alcance máximo de la luz
-    public float minRange = 5f;     // Alcance mínimo
+    public float maxIntensity = 2f;
+    public float minIntensity = 0f;
+    public float maxRange = 25f;
+    public float minRange = 5f;
 
     [Header("EFECTOS")]
-    public bool enableFlicker = true;      // Activar parpadeo cuando la energía es baja
-    public float flickerThreshold = 0.2f;  // % de energía para empezar a parpadear
+    public bool enableFlicker = true;
+    public float flickerThreshold = 0.2f;
+
+    [Header("UI")]
+    public Image energyFill; // Barra de energía (Energy_Fill)
 
     void Start()
     {
-        // Iniciar las luces con energía completa
+        // Iniciar con energía completa
         currentEnergy = maxEnergy;
+
+        //  Si no se asignó en el inspector, buscar automáticamente
+        if (energyFill == null)
+        {
+            GameObject bar = GameObject.Find("Energy_Fill");
+            if (bar != null)
+            {
+                energyFill = bar.GetComponent<Image>();
+            }
+            else
+            {
+                Debug.LogWarning("No se encontró Energy_Fill en la escena");
+            }
+        }
     }
 
     void Update()
     {
-        DrainEnergy();   // Reducir energía con el tiempo
-        UpdateLights();  // Actualizar intensidad, alcance y parpadeo
+        DrainEnergy();
+        UpdateLights();
     }
 
     /// <summary>
-    /// Reduce la energía con el tiempo
+    /// Reduce energía con el tiempo
     /// </summary>
     void DrainEnergy()
     {
         currentEnergy -= drainRate * Time.deltaTime;
-        currentEnergy = Mathf.Clamp(currentEnergy, 0, maxEnergy); // Evitar valores fuera de rango
+        currentEnergy = Mathf.Clamp(currentEnergy, 0, maxEnergy);
     }
 
     /// <summary>
-    /// Actualiza intensidad, alcance y efectos de las luces según la energía
+    /// Actualiza luces y UI
     /// </summary>
     void UpdateLights()
     {
-        float normalized = currentEnergy / maxEnergy; // Normalizamos energía 0-1
+        float normalized = currentEnergy / maxEnergy;
 
+        // Intensidad y alcance según energía
         float intensity = Mathf.Lerp(minIntensity, maxIntensity, normalized);
         float range = Mathf.Lerp(minRange, maxRange, normalized);
 
@@ -60,7 +79,7 @@ public class CarLightSystem : MonoBehaviour
         leftLight.range = range;
         rightLight.range = range;
 
-        // Parpadeo si la energía está baja
+        // Parpadeo si está bajo
         if (enableFlicker && normalized < flickerThreshold && currentEnergy > 0)
         {
             float flicker = Random.Range(0.8f, 1.2f);
@@ -68,21 +87,28 @@ public class CarLightSystem : MonoBehaviour
             rightLight.intensity *= flicker;
         }
 
-        // Apagar completamente si no hay energía
-        if (currentEnergy <= 0)
+        // Encendido/apagado
+        bool isOn = currentEnergy > 0;
+        leftLight.enabled = isOn;
+        rightLight.enabled = isOn;
+
+        //  Actualizar barra UI
+        if (energyFill != null)
         {
-            leftLight.enabled = false;
-            rightLight.enabled = false;
-        }
-        else
-        {
-            leftLight.enabled = true;
-            rightLight.enabled = true;
+            energyFill.fillAmount = normalized;
+
+            // BONUS: cambio de color según energía
+            if (normalized > 0.6f)
+                energyFill.color = Color.green;
+            else if (normalized > 0.3f)
+                energyFill.color = Color.yellow;
+            else
+                energyFill.color = Color.red;
         }
     }
 
     /// <summary>
-    /// Función para recargar energía (usar con pickups o eventos)
+    /// Recargar energía
     /// </summary>
     public void AddEnergy(float amount)
     {
@@ -91,7 +117,7 @@ public class CarLightSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// Función para quitar energía (efectos negativos)
+    /// Quitar energía
     /// </summary>
     public void RemoveEnergy(float amount)
     {

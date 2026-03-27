@@ -41,13 +41,17 @@ public class PauseMenuManager : MonoBehaviour
 
     public void RestartLevel()
     {
+        pausePanel.SetActive(false);
         Time.timeScale = 1.0f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void GoToMainMenu()
     {
-        Time.timeScale = 1.0f;
-        SceneManager.LoadScene("MainMenu");
+        pausePanel.SetActive(false); // Oculta el menú
+        Time.timeScale = 1.0f;       // Reanuda el tiempo
+        isPaused = false;            // Reset estado
+
+        SceneManager.LoadScene("MainMenu"); 
     }
 }
