@@ -5327,9 +5327,6 @@ PrefabInstance:
       addedObject: {fileID: 916557430}
     - targetCorrespondingSourceObject: {fileID: 8160049463398649625, guid: 66f97e68ed002b74f8e181d1c3108e14, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 916557429}
-    - targetCorrespondingSourceObject: {fileID: 8160049463398649625, guid: 66f97e68ed002b74f8e181d1c3108e14, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 916557427}
     - targetCorrespondingSourceObject: {fileID: 8160049463398649625, guid: 66f97e68ed002b74f8e181d1c3108e14, type: 3}
       insertIndex: -1
@@ -23265,29 +23262,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.1658638, y: 1.8935277, z: 4.354764}
   m_Center: {x: -0.0000013113025, y: 1.1860574, z: -0.18928288}
---- !u!114 &916557429
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 916557426}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b4bbf75b871509408efedea9eee4a81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CarLightSystem
-  leftLight: {fileID: 439379892}
-  rightLight: {fileID: 731637211}
-  maxEnergy: 20
-  currentEnergy: 0
-  drainRate: 1
-  maxIntensity: 700
-  minIntensity: 0
-  maxRange: 100
-  minRange: 5
-  enableFlicker: 1
-  flickerThreshold: 0.2
 --- !u!54 &916557430
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -23385,7 +23359,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TaxiPassengerSystem
   directionalLight: {fileID: 122091691}
   monster: {fileID: 1331040462}
-  carLightSystem: {fileID: 916557429}
+  carLightSystem: {fileID: 916557439}
   arrow: {fileID: 1047197708}
   destinationMarker: {fileID: 1396195419}
   passengers:
