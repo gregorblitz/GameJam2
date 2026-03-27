@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem; // Requerido para el nuevo Input System
 
 public class CarController : MonoBehaviour
 {
@@ -6,23 +7,43 @@ public class CarController : MonoBehaviour
     public float speed = 15f;
     public float turnSpeed = 100f;
 
-    //***Para powerup aumento de velocidad
-    private float originalSpeed; // Guarda velocidad normal
-    private Coroutine speedCoroutine; // controla el temporizador
-    //***hasta aca powerup aumento velocidad
+    // Referencias al Nuevo Input System (Cambiado a InputSystem_Actions)
+    private InputSystem_Actions inputActions;
+    private Vector2 moveInputVector;
 
-    private float moveInput;
-    private float turnInput;
+    // Powerup variables
+    private float originalSpeed; 
+    private Coroutine speedCoroutine; 
+
+    private void Awake()
+    {
+        // Inicializamos las acciones usando el nombre exacto del Asset de Unity 6
+        inputActions = new InputSystem_Actions();
+    }
+
+    private void OnEnable()
+    {
+        // Activamos el mapa de acciones "Player"
+        inputActions.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        // Desactivamos para evitar errores cuando el objeto no esté activo
+        inputActions.Player.Disable();
+    }
+
     void Start()
     {
-        // Guardamos la velocidad inicial al comenzar
+        // Guardamos la velocidad inicial
         originalSpeed = speed;
     }
+
     void Update()
     {
-        // Input de teclado
-        moveInput = Input.GetAxis("Vertical");   // W/S
-        turnInput = Input.GetAxis("Horizontal"); // A/D
+        // Leemos el valor del Vector2 del Input Action "Move"
+        // Asegúrate de que en tu Asset el Action Map se llame 'Player' y la Acción 'Move'
+        moveInputVector = inputActions.Player.Move.ReadValue<Vector2>();
     }
 
     void FixedUpdate()
@@ -33,36 +54,31 @@ public class CarController : MonoBehaviour
 
     void Move()
     {
-        // Movimiento hacia adelante
-        transform.Translate(Vector3.forward * moveInput * speed * Time.fixedDeltaTime);
+        // moveInputVector.y es el eje vertical (W/S o flechas Arriba/Abajo)
+        transform.Translate(Vector3.forward * moveInputVector.y * speed * Time.fixedDeltaTime);
     }
 
     void Turn()
     {
-        // Giro del carro
-        transform.Rotate(Vector3.up * turnInput * turnSpeed * Time.fixedDeltaTime);
+        // moveInputVector.x es el eje horizontal (A/D o flechas Izquierda/Derecha)
+        transform.Rotate(Vector3.up * moveInputVector.x * turnSpeed * Time.fixedDeltaTime);
     }
-    //*** Función que llama el PowerUp
+
+    // --- Lógica de PowerUp (Intacta para no romper tus mecánicas) ---
     public void ActivateSpeedBoost(float multiplier, float duration)
     {
-        // Si ya tiene un turbo activo, reinicia para que no se buguee
         if (speedCoroutine != null) StopCoroutine(speedCoroutine);
-        
-        // Inicia el temporizador
         speedCoroutine = StartCoroutine(SpeedBoostRoutine(multiplier, duration));
     }
 
-    // El temporizador
     private System.Collections.IEnumerator SpeedBoostRoutine(float multiplier, float duration)
     {
-        
-        speed = originalSpeed * multiplier; // Multiplicamos la velocidad
+        speed = originalSpeed * multiplier;
         Debug.Log("¡Turbo activado! Nueva velocidad: " + speed);
 
         yield return new WaitForSeconds(duration); 
 
-        speed = originalSpeed; // Devuelve velocidad a la normalidad
+        speed = originalSpeed;
         Debug.Log("Turbo apagado. Velocidad normal: " + speed);
     }
-    //***hasta aca powerup aumento velocidad
 }
