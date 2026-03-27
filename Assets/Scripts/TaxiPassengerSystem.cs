@@ -7,6 +7,8 @@ public class TaxiPassengerSystem : MonoBehaviour
     public Light directionalLight;      // Luz global del sol
     public GameObject monster;          // Monstruo que se activa en el modo oscuro
 
+    public float spawnDistance = 15f;   // Cantidad de metros detras del taxi en el que aparecera el bicho
+
     [Header("Luces del Carro")]
     public CarLightSystem carLightSystem;  // Referencia al sistema de luces del carro
 
@@ -128,7 +130,27 @@ public class TaxiPassengerSystem : MonoBehaviour
             directionalLight.intensity = 0f;
 
         // Activar monstruo
-        if (monster != null)
+        /*if (monster != null)
             monster.SetActive(true);
+        */
+        // --- APARICION DEL MONSTRUO CERCA DEL TAXI ---
+        if (monster != null)
+        {
+            // Calcula posicion detrás del taxi
+            // transform.position es el taxi, transform.forward es hacia adelante (+ adelante del carro - detras)
+            Vector3 spawnPosition = transform.position + (transform.forward * spawnDistance);
+            
+            // Mantener la altura Y original del monstruo para que no aparezca enterrado o flotando
+            spawnPosition.y = monster.transform.position.y;
+
+            // Transportar al monstruo a esa posicion
+            monster.transform.position = spawnPosition;
+            
+            // El monstruo mira directamente al taxi al aparecer
+            monster.transform.LookAt(transform.position);
+
+            // Activa la bestia!
+            monster.SetActive(true);
+        }
     }
 }

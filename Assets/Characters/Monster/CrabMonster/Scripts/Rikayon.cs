@@ -10,9 +10,6 @@ public class Rikayon : MonoBehaviour
     [Header("Movimiento")]
     public float speed = 5f;
 
-    [Header("Inicio")]
-    public float delayBeforeChase = 5f;
-
     //****Se añade para que se reponga luego de un ataque
     [Header("Ataque")]
     public float attackRecoveryTime = 2f; // Segundos que tarda el bicho en volver a moverse tras atacar
@@ -24,19 +21,13 @@ public class Rikayon : MonoBehaviour
 
     void Start()
     {
-        // Espera antes de empezar a perseguir
-        StartCoroutine(StartChase());
-    }
-
-    IEnumerator StartChase()
-    {
-        yield return new WaitForSeconds(delayBeforeChase);
-
+        // ¡El bicho empieza a perseguir INMEDIATAMENTE al ser activado!
         isChasing = true;
-
-        // Activa animación de caminar
         animator.SetBool("isWalking", true);
     }
+
+    // Nota: ¡Si en algún momento planeas apagar y volver a prender al bicho varias veces 
+    // en la misma partida, cambia "void Start()" por "void OnEnable()"!
 
     void Update()
     {
