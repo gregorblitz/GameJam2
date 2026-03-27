@@ -8,10 +8,10 @@ public class Rikayon : MonoBehaviour
     public Transform player;
 
     [Header("Movimiento")]
-    public float speed = 5f;
+    public float speed = 6f;
 
     [Header("Inicio")]
-    public float delayBeforeChase = 5f;
+    public float delayBeforeChase = 1f;
 
     [Header("Ataque")]
     public float attackRecoveryTime = 2f;
@@ -19,7 +19,7 @@ public class Rikayon : MonoBehaviour
 
     [Header("PELIGRO UI")]
     public GameObject dangerFlash;
-    public float dangerDistance = 12f;
+    public float dangerDistance = 15f;
     public float flickerSpeed = 8f;
 
     [Header("HORDA (TELETRANSPORTE)")]

@@ -114,6 +114,16 @@ public class TaxiPassengerSystem : MonoBehaviour
                 carLightSystem.AddEnergy(carLightSystem.maxEnergy);
 
             ActivateDarkMode();
+            // Bajamos la luz ambiental general de la escena
+            RenderSettings.ambientIntensity = 0.05f; 
+            RenderSettings.ambientLight = Color.black;
+
+            // Activamos niebla negra para que no se vea el fondo de la ciudad
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = Color.black;    // Color de la niebla
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.02f;        // Qué tan espesa es la niebla (ajustable)
+
         }
     }
 
@@ -143,7 +153,7 @@ public class TaxiPassengerSystem : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = "Pasajeros: " + passengersDeliveredCount;
+            scoreText.text = "Pasajeros entregados: " + passengersDeliveredCount;
         }
     }
     // -------------------------------------------------
