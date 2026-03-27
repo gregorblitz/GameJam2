@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Destination
   - Passenger
+  - BatteryPowerUp
   layers:
   - Default
   - TransparentFX
