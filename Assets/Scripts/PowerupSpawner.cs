@@ -4,14 +4,12 @@ using System.Collections.Generic;
 public class PowerupSpawner : MonoBehaviour
 {
     [Header("TUS POWER UPS")]
-    [Tooltip("Arrastra aquí los Prefabs de la Batería y el Rayo de Velocidad")]
     public GameObject[] powerUpPrefabs; 
     
     [Header("CANTIDAD")]
-    public int totalPowerUpsToSpawn = 20; // Cuántos objetos habrá repartidos en total
+    public int totalPowerUpsToSpawn = 38; // Objetos repartidos en total
 
     [Header("PUNTOS EN LA CALLE")]
-    [Tooltip("Arrastra aquí todos los puntos invisibles que crearás en las calles")]
     public List<Transform> spawnPoints;
 
     void Start()

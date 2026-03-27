@@ -1,59 +1,82 @@
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class TaxiPassengerSystem : MonoBehaviour
 {
-    [Header("Modo Oscuro")]
-    public Light directionalLight;      // Luz global del sol
-    public GameObject monster;          // Monstruo que se activa en el modo oscuro
+    // --- NUEVO: TEXTO EN PANTALLA ---
+    [Header("UI (Interfaz de Usuario)")]
+    public TextMeshProUGUI scoreText; 
+    // --------------------------------
+    [Header("Modo Oscuro / La Horda")]
+    public Light directionalLight;      
+    public GameObject[] monsters;       
+    public float spawnDistance = 15f;   
+    public float monsterSeparation = 4f;
 
     [Header("Luces del Carro")]
-    public CarLightSystem carLightSystem;  // Referencia al sistema de luces del carro
+    public CarLightSystem carLightSystem;  
 
     [Header("Referencias")]
-    public ArrowIndicator arrow;         // Flecha indicadora
-    public Transform destinationMarker;  // Marcador visual de destino
+    public ArrowIndicator arrow;         
+    public Transform destinationMarker;  
 
-    [Header("Pasajeros")]
-    public List<Passenger> passengers;   // Lista de pasajeros
+    // --- SISTEMA ALEATORIO PASAJEROS ---
+    [Header("Generación de Pasajeros")]
+    [Tooltip("Arrastra aquí el PREFAB de tu pasajero")]
+    public GameObject passengerPrefab;       
+    [Tooltip("Puntos en la calle donde pueden aparecer esperando el taxi")]
+    public List<Transform> spawnPoints;      
+    [Tooltip("Puntos en la ciudad donde los pasajeros quieren bajarse")]
+    public List<Transform> destinationPoints;
+    // --------------------------------
 
     private Passenger currentPassenger;
-    private int currentIndex = 0;
-    private bool hasPassenger = false;   // Si actualmente hay un pasajero a bordo
+    private int passengersPickedUpCount = 0; // Cuenta los que hemos recogido en total
+    private int passengersDeliveredCount = 0;// Cuenta pasajeros entregados (Para los puntos)
+    private bool hasPassenger = false;   
 
     void Start()
     {
-        // Ocultar marcador al inicio
         if (destinationMarker != null)
             destinationMarker.gameObject.SetActive(false);
 
-        SetNextPassenger(); // Activar primer pasajero
+        // Actualizamos el marcador a 0 apenas empieza el juego
+        UpdateScoreUI();
+        // Al iniciar el juego, crea el primer pasajero
+        SpawnRandomPassenger(); 
     }
 
-    /// <summary>
-    /// Activa al siguiente pasajero en la lista
-    /// </summary>
-    void SetNextPassenger()
+    void SpawnRandomPassenger()
     {
-        if (currentIndex >= passengers.Count)
+        // Verificación de seguridad
+        if (spawnPoints.Count == 0 || destinationPoints.Count == 0 || passengerPrefab == null)
         {
-            Debug.Log("No hay más pasajeros");
-            arrow.target = null;
+            Debug.LogWarning("¡Faltan puntos o el Prefab del pasajero en el Inspector!");
             return;
         }
 
-        currentPassenger = passengers[currentIndex];
-        currentPassenger.gameObject.SetActive(true);
+        // Eleccion de un punto de aparición al azar
+        Transform randomSpawn = spawnPoints[Random.Range(0, spawnPoints.Count)];
 
-        // Flecha apunta al pasajero
+        // Eleccion de destino al azar
+        Transform randomDest = destinationPoints[Random.Range(0, destinationPoints.Count)];
+
+        // clonacion pasajero en ese punto
+        GameObject newPassenger = Instantiate(passengerPrefab, randomSpawn.position, randomSpawn.rotation);
+        currentPassenger = newPassenger.GetComponent<Passenger>();
+
+        // Inyectamos su destino deseado
+        currentPassenger.destination = randomDest;
+
+        // la flecha guía hacia él
         arrow.target = currentPassenger.transform;
 
-        Debug.Log("Nuevo pasajero activado");
+        Debug.Log("Nuevo pasajero esperando en: " + randomSpawn.name);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // RECOGER PASAJERO
         if (other.CompareTag("Passenger") && !hasPassenger)
         {
             Passenger p = other.GetComponent<Passenger>();
@@ -61,48 +84,39 @@ public class TaxiPassengerSystem : MonoBehaviour
                 PickUpPassenger(p);
         }
 
-        // ENTREGAR PASAJERO
         if (other.CompareTag("Destination") && hasPassenger)
         {
             DropPassenger();
         }
     }
 
-    /// <summary>
-    /// Función al recoger un pasajero
-    /// </summary>
     void PickUpPassenger(Passenger passenger)
     {
         hasPassenger = true;
-        passenger.PickUp();
+        passengersPickedUpCount++; // Sumamos 1 a nuestra cuenta histórica
 
-        // Activar marcador de destino
+        passenger.PickUp(); 
+
         if (destinationMarker != null && passenger.destination != null)
         {
             destinationMarker.position = passenger.destination.position;
             destinationMarker.gameObject.SetActive(true);
         }
 
-        // Flecha apunta al destino
         arrow.target = passenger.destination;
+        Debug.Log("Pasajero recogido. Llevas en total: " + passengersPickedUpCount);
 
-        Debug.Log("Pasajero recogido");
-
-        // Si es el segundo pasajero (índice 1)
-        if (currentIndex == 1)
+        // --- INVOCACIÓN DE LA HORDA ---
+        // Si acabamos de recoger al SEGUNDO pasajero, apagamos las luces
+        if (passengersPickedUpCount == 2)
         {
-            // Recargar luces del carro al máximo
             if (carLightSystem != null)
                 carLightSystem.AddEnergy(carLightSystem.maxEnergy);
 
-            // Activar modo oscuro
             ActivateDarkMode();
         }
     }
 
-    /// <summary>
-    /// Función al entregar un pasajero
-    /// </summary>
     void DropPassenger()
     {
         hasPassenger = false;
@@ -110,25 +124,54 @@ public class TaxiPassengerSystem : MonoBehaviour
         if (destinationMarker != null)
             destinationMarker.gameObject.SetActive(false);
 
-        currentIndex++; // Pasar al siguiente pasajero
-        Debug.Log("Pasajero entregado");
+        // Destruimos al pasajero viejo para que no se acumule basura en la memoria
+        if (currentPassenger != null)
+        {
+            Destroy(currentPassenger.gameObject);
+        }
+        // --- SUMAR PUNTO AL ENTREGAR ---
+        passengersDeliveredCount++; // suma 1 a los entregados
+        UpdateScoreUI();            // Actualiza el texto en pantalla
+        // --------------------------------------
+        Debug.Log("Pasajero entregado. Generando el siguiente...");
 
-        SetNextPassenger(); // Activar siguiente pasajero
+        // Llamamos al ciclo de nuevo para que el juego sea infinito
+        SpawnRandomPassenger(); 
     }
+    // --- ACTUALIZAR LA PANTALLA ---
+    void UpdateScoreUI()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = "Pasajeros: " + passengersDeliveredCount;
+        }
+    }
+    // -------------------------------------------------
 
-    /// <summary>
-    /// Modo oscuro: apaga luz global y activa el monstruo
-    /// </summary>
     void ActivateDarkMode()
     {
-        Debug.Log("MODO OSCURO ACTIVADO");
+        Debug.Log("MODO OSCURO ACTIVADO - ¡ESCAPA DE LA HORDA!");
 
-        // Apagar luz del sol
         if (directionalLight != null)
             directionalLight.intensity = 0f;
 
-        // Activar monstruo
-        if (monster != null)
-            monster.SetActive(true);
+        for (int i = 0; i < monsters.Length; i++)
+        {
+            if (monsters[i] != null)
+            {
+                Vector3 baseSpawnPosition = transform.position + (transform.forward * spawnDistance);
+
+                float lateralOffset = 0f;
+                if (i == 1) lateralOffset = -monsterSeparation; 
+                else if (i == 2) lateralOffset = monsterSeparation;  
+
+                Vector3 finalPosition = baseSpawnPosition + (transform.right * lateralOffset);
+                finalPosition.y = monsters[i].transform.position.y; 
+
+                monsters[i].transform.position = finalPosition;
+                monsters[i].transform.LookAt(transform.position); 
+                monsters[i].SetActive(true); 
+            }
+        }
     }
 }
