@@ -9,7 +9,7 @@ public class SpeedPowerup : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         // Buscamos si el obj tiene el script del Taxi
-        TaxiController taxi = other.GetComponent<TaxiController>();
+        CarController taxi = other.GetComponent<CarController>();
 
         if (taxi != null)
         {
