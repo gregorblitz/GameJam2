@@ -5,36 +5,35 @@ public class TaxiPassengerSystem : MonoBehaviour
 {
     [Header("Modo Oscuro")]
     public Light directionalLight;      // Luz global del sol
-    public GameObject monster;          // Monstruo que se activa en el modo oscuro
-
-    public float spawnDistance = 15f;   // Cantidad de metros detras del taxi en el que aparecera el bicho
+    
+    // --- CAMBIO: Ahora es un arreglo de monstruos ---
+    public GameObject[] monsters;       
+    public float spawnDistance = 15f;   // A cuántos metros del taxi aparecerán
+    public float monsterSeparation = 4f;// SeparaciOn de bichos para que no choquen al aparecer
+    // ------------------------------------------------
 
     [Header("Luces del Carro")]
-    public CarLightSystem carLightSystem;  // Referencia al sistema de luces del carro
+    public CarLightSystem carLightSystem;  
 
     [Header("Referencias")]
-    public ArrowIndicator arrow;         // Flecha indicadora
-    public Transform destinationMarker;  // Marcador visual de destino
+    public ArrowIndicator arrow;         
+    public Transform destinationMarker;  
 
     [Header("Pasajeros")]
-    public List<Passenger> passengers;   // Lista de pasajeros
+    public List<Passenger> passengers;   
 
     private Passenger currentPassenger;
     private int currentIndex = 0;
-    private bool hasPassenger = false;   // Si actualmente hay un pasajero a bordo
+    private bool hasPassenger = false;   
 
     void Start()
     {
-        // Ocultar marcador al inicio
         if (destinationMarker != null)
             destinationMarker.gameObject.SetActive(false);
 
-        SetNextPassenger(); // Activar primer pasajero
+        SetNextPassenger(); 
     }
 
-    /// <summary>
-    /// Activa al siguiente pasajero en la lista
-    /// </summary>
     void SetNextPassenger()
     {
         if (currentIndex >= passengers.Count)
@@ -46,8 +45,6 @@ public class TaxiPassengerSystem : MonoBehaviour
 
         currentPassenger = passengers[currentIndex];
         currentPassenger.gameObject.SetActive(true);
-
-        // Flecha apunta al pasajero
         arrow.target = currentPassenger.transform;
 
         Debug.Log("Nuevo pasajero activado");
@@ -55,7 +52,6 @@ public class TaxiPassengerSystem : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // RECOGER PASAJERO
         if (other.CompareTag("Passenger") && !hasPassenger)
         {
             Passenger p = other.GetComponent<Passenger>();
@@ -63,48 +59,35 @@ public class TaxiPassengerSystem : MonoBehaviour
                 PickUpPassenger(p);
         }
 
-        // ENTREGAR PASAJERO
         if (other.CompareTag("Destination") && hasPassenger)
         {
             DropPassenger();
         }
     }
 
-    /// <summary>
-    /// Función al recoger un pasajero
-    /// </summary>
     void PickUpPassenger(Passenger passenger)
     {
         hasPassenger = true;
         passenger.PickUp();
 
-        // Activar marcador de destino
         if (destinationMarker != null && passenger.destination != null)
         {
             destinationMarker.position = passenger.destination.position;
             destinationMarker.gameObject.SetActive(true);
         }
 
-        // Flecha apunta al destino
         arrow.target = passenger.destination;
-
         Debug.Log("Pasajero recogido");
 
-        // Si es el segundo pasajero (índice 1)
         if (currentIndex == 1)
         {
-            // Recargar luces del carro al máximo
             if (carLightSystem != null)
                 carLightSystem.AddEnergy(carLightSystem.maxEnergy);
 
-            // Activar modo oscuro
             ActivateDarkMode();
         }
     }
 
-    /// <summary>
-    /// Función al entregar un pasajero
-    /// </summary>
     void DropPassenger()
     {
         hasPassenger = false;
@@ -112,45 +95,40 @@ public class TaxiPassengerSystem : MonoBehaviour
         if (destinationMarker != null)
             destinationMarker.gameObject.SetActive(false);
 
-        currentIndex++; // Pasar al siguiente pasajero
+        currentIndex++; 
         Debug.Log("Pasajero entregado");
 
-        SetNextPassenger(); // Activar siguiente pasajero
+        SetNextPassenger(); 
     }
 
-    /// <summary>
-    /// Modo oscuro: apaga luz global y activa el monstruo
-    /// </summary>
     void ActivateDarkMode()
     {
-        Debug.Log("MODO OSCURO ACTIVADO");
+        Debug.Log("MODO OSCURO ACTIVADO - ¡ESCAPA DE LA HORDA!");
 
-        // Apagar luz del sol
         if (directionalLight != null)
             directionalLight.intensity = 0f;
 
-        // Activar monstruo
-        /*if (monster != null)
-            monster.SetActive(true);
-        */
-        // --- APARICION DEL MONSTRUO CERCA DEL TAXI ---
-        if (monster != null)
+        // --- APARICION EN FORMACION ---
+        for (int i = 0; i < monsters.Length; i++)
         {
-            // Calcula posicion detrás del taxi
-            // transform.position es el taxi, transform.forward es hacia adelante (+ adelante del carro - detras)
-            Vector3 spawnPosition = transform.position + (transform.forward * spawnDistance);
-            
-            // Mantener la altura Y original del monstruo para que no aparezca enterrado o flotando
-            spawnPosition.y = monster.transform.position.y;
+            if (monsters[i] != null)
+            {
+                // Calcula posicion base frente al taxi (+) o detrás (-)
+                Vector3 baseSpawnPosition = transform.position + (transform.forward * spawnDistance);
 
-            // Transportar al monstruo a esa posicion
-            monster.transform.position = spawnPosition;
-            
-            // El monstruo mira directamente al taxi al aparecer
-            monster.transform.LookAt(transform.position);
+                // Desplazamiento lateral usando transform.right
+                float lateralOffset = 0f;
+                if (i == 1) lateralOffset = -monsterSeparation; // El segundo bicho va a la izquierda
+                else if (i == 2) lateralOffset = monsterSeparation;  // El tercer bicho va a la derecha
 
-            // Activa la bestia!
-            monster.SetActive(true);
+                // Posicion final del bicho actual
+                Vector3 finalPosition = baseSpawnPosition + (transform.right * lateralOffset);
+                finalPosition.y = monsters[i].transform.position.y; // Mantenemos su altura original
+
+                monsters[i].transform.position = finalPosition;
+                monsters[i].transform.LookAt(transform.position); // Miran al taxi
+                monsters[i].SetActive(true); // Despiertan
+            }
         }
     }
 }

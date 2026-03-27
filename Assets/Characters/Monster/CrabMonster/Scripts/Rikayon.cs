@@ -10,37 +10,45 @@ public class Rikayon : MonoBehaviour
     [Header("Movimiento")]
     public float speed = 5f;
 
-    //****Se añade para que se reponga luego de un ataque
     [Header("Ataque")]
-    public float attackRecoveryTime = 2f; // Segundos que tarda el bicho en volver a moverse tras atacar
-    public float attackRange = 3.5f;      // NUEVO: Distancia a la que el bicho ataca (ajustable en el Inspector)
+    public float attackRecoveryTime = 2f; 
+    public float attackRange = 3.5f;      
+
+    [Header("Teletransporte (Jump Scare)")]
+    public float maxDistanceToTeleport = 50f; 
+    public float spawnDistanceFront = 25f;    
+
+    // --- NUEVO: SISTEMA DE HORDA ---
+    [Header("Formación de la Horda")]
+    public float lateralOffset = 0f; 
+    // -------------------------------
 
     private bool isChasing = false;
     private bool isAttacking = false;
-    //****
 
     void Start()
     {
-        // ¡El bicho empieza a perseguir INMEDIATAMENTE al ser activado!
         isChasing = true;
         animator.SetBool("isWalking", true);
     }
 
-    // Nota: ¡Si en algún momento planeas apagar y volver a prender al bicho varias veces 
-    // en la misma partida, cambia "void Start()" por "void OnEnable()"!
-
     void Update()
     {
-        // Si está atacando, no se mueve
         if (!isChasing || isAttacking) return;
 
-        // Verifica distancia evita el error de colisión de Unity
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        
+
+        // --- Si bicho se queda muy atras llama la horda ---
+        if (distanceToPlayer >= maxDistanceToTeleport)
+        {
+            TriggerHordeTeleport();
+            return; 
+        }
+
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer(player.gameObject);
-            return; // Detiene el Update para que no siga caminando este frame
+            return; 
         }
 
         ChasePlayer();
@@ -48,85 +56,67 @@ public class Rikayon : MonoBehaviour
 
     void ChasePlayer()
     {
-        // Dirección hacia el jugador (sin inclinación)
         Vector3 direction = (player.position - transform.position).normalized;
         direction.y = 0;
-
-        // Rotar hacia el jugador
         transform.rotation = Quaternion.LookRotation(direction);
-
-        // Moverse hacia el jugador
         transform.position += direction * speed * Time.deltaTime;
     }
 
-    //  DETECTAR COLISIÓN CON EL TAXI 
+    // ---HORDA ---
+    void TriggerHordeTeleport()
+    {
+        // Busca a todos los bichos en el mapa
+        Rikayon[] todaLaHorda = FindObjectsOfType<Rikayon>();
+
+        // teletransporta cada bicho al mismo tiempo
+        foreach (Rikayon bicho in todaLaHorda)
+        {
+            bicho.ExecuteTeleport();
+        }
+
+        Debug.Log("¡Un bicho se quedó atrás y teletransportó a toda la horda!");
+    }
+
+    // se ejecuta en cada bicho individualmente para saber donde ubicarse
+    public void ExecuteTeleport()
+    {
+        // lateralOffset para ubicar a la izquierda, centro o derecha del taxi
+        Vector3 newPosition = player.position + (player.forward * spawnDistanceFront) + (player.right * lateralOffset);
+        
+        newPosition.y = transform.position.y;
+        transform.position = newPosition;
+
+        transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
+    }
+    // -------------------------
+
     private void OnCollisionEnter(Collision collision)
     {
-        /*if (collision.gameObject.CompareTag("Player"))
-        {
-            AttackPlayer();
-        }*/
-        //**** Si choca contra el Taxi Y no esta atacando
         if (collision.gameObject.CompareTag("Player") && !isAttacking)
         {
             AttackPlayer(collision.gameObject);
         }
-        //****
     }
 
-    /*void AttackPlayer()
-    {
-        if (isAttacking) return;
-
-        isAttacking = true;
-
-        // Detener movimiento
-        animator.SetBool("isWalking", false);
-
-        // Activar animación de ataque
-        animator.SetTrigger("Attack");
-
-        // Aquí luego puedes poner Game Over
-        Debug.Log("Jugador atrapado");
-    }*/
-
-    //****Mejora ataque bicho
     void AttackPlayer(GameObject taxi)
     {
         isAttacking = true;
-
-        // Detiene movimiento
         animator.SetBool("isWalking", false);
-
-        // Activa animación de ataque
         animator.SetTrigger("Attack");
 
-        // --- APLICA DAÑO AL TAXI ---
         PlayerHealth taxiHealth = taxi.GetComponent<PlayerHealth>();
         if (taxiHealth != null)
         {
-            taxiHealth.LoseLife(); // Le quitamos una vida
-        }
-        else 
-        {
-            Debug.LogWarning("¡El bicho atrapó algo, pero no encontró el script PlayerHealth en el Taxi!");
+            taxiHealth.LoseLife(); 
         }
 
-        Debug.Log("¡Jugador atrapado por el bicho!");
-
-        // Inicia corrutina para que el monstruo vuelva a la normalidad
         StartCoroutine(RecoverFromAttack());
     }
 
-    // Temporizador para que monstruo vuelva a perseguir al player si aun quedan vidas
     IEnumerator RecoverFromAttack()
     {
-        // Espera a que termine animación de ataque y un poquito de cooldown
         yield return new WaitForSeconds(attackRecoveryTime);
-
-        // El bicho vuelve a la normalidad
         isAttacking = false;
-        animator.SetBool("isWalking", true); // Vuelve a caminar
+        animator.SetBool("isWalking", true); 
     }
-    //****
 }
